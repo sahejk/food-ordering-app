@@ -14,6 +14,8 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import Paper from '@material-ui/core/Paper';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
+
+
 import Header from '../../common/header/Header';
 import '../checkout/Checkout.css'
 
@@ -35,7 +37,7 @@ const styles = (theme => ({
     gridList: {
         flexWrap: 'nowrap',
         // Promote the list into his own layer on Chrome. This cost memory but helps keeping high FPS.
-        transform: 'translateZ(0)',
+        //transform: 'translateZ(0)',
     },
     gridListTile: {
         textAlign: 'left',
@@ -60,9 +62,9 @@ const styles = (theme => ({
     formControlSelect: {
         width: '100%',
     },
-    formButton:{
+    formButton: {
         'font-weight': 400,
-        'width':'150px'
+        'width': '150px'
     }
 }))
 
@@ -84,7 +86,7 @@ class Checkout extends Component {
         this.state = {
             activeStep: 0,
             steps: this.getSteps(),
-            value: 1,
+            value: 0,
             accessToken: sessionStorage.getItem('access-token'),
             addresses: [],
             flatBuildingName: "",
@@ -93,12 +95,12 @@ class Checkout extends Component {
             localityRequired: "dispNone",
             city: "",
             cityRequired: "dispNone",
-            state: "",
+            selectedState: "",
             stateRequired: "dispNone",
             pincode: "",
             pincodeRequired: "dispNone",
             pincodeHelpText: "dispNone",
-            states: ["Karnataka", "Tamil Nadu", "Andhra Pradesh", "Maharashtra", "Goa", "Delhi", "Uttar Pradesh"],
+            states: [],
 
 
         }
@@ -109,12 +111,14 @@ class Checkout extends Component {
         return ['Delivery', 'Payment'];
     }
     nextButtonClickHandler = () => {
-        let activeStep = this.state.activeStep;
-        activeStep++;
-        this.setState({
-            ...this.state,
-            activeStep: activeStep,
-        });
+        if (this.state.value === 0) {
+            let activeStep = this.state.activeStep;
+            activeStep++;
+            this.setState({
+                ...this.state,
+                activeStep: activeStep,
+            });
+        }
     }
 
     backButtonClickHandler = () => {
@@ -140,6 +144,27 @@ class Checkout extends Component {
     }
 
     componentDidMount() {
+
+        this.getAllAddress();
+
+        let statesData = null;
+        let xhrStates = new XMLHttpRequest();
+        let that = this;
+        xhrStates.addEventListener("readystatechange", function () {
+            if (xhrStates.readyState === 4 && xhrStates.status === 200) {
+                let states = JSON.parse(xhrStates.responseText).states;
+                that.setState({
+                    ...that.state,
+                    states: states,
+                })
+            }
+        })
+
+        xhrStates.open('GET', this.props.baseUrl + 'states')
+        xhrStates.send(statesData);
+    }
+
+    getAllAddress = () => {
         let data = null;
         let that = this;
         let xhrAddress = new XMLHttpRequest();
@@ -170,7 +195,92 @@ class Checkout extends Component {
         xhrAddress.open('GET', this.props.baseUrl + 'address/customer');
         xhrAddress.setRequestHeader('authorization', 'Bearer ' + this.state.accessToken)
         xhrAddress.send(data);
+
     }
+    saveAddressClickHandler = () => {
+        if (this.saveAddressFormValid()) {
+            let newAddressData = JSON.stringify({
+                "city": this.state.city,
+                "flat_building_name": this.state.flatBuildingName,
+                "locality": this.state.locality,
+                "pincode": this.state.pincode,
+                "state_uuid": this.state.selectedState,
+            })
+
+            let xhrSaveAddress = new XMLHttpRequest();
+            let that = this;
+
+            xhrSaveAddress.addEventListener("readystatechange", function () {
+                if (xhrSaveAddress.readyState === 4 && xhrSaveAddress.status === 201) {
+                    that.setState({
+                        ...that.state,
+                        value:0,
+
+                    })
+                    that.getAllAddress();
+                }
+            })
+
+            xhrSaveAddress.open('POST', this.props.baseUrl + 'address')
+            xhrSaveAddress.setRequestHeader('authorization', 'Bearer ' + this.state.accessToken)
+            xhrSaveAddress.setRequestHeader("Content-Type", "application/json");
+            xhrSaveAddress.send(newAddressData);
+        }
+    }
+
+    saveAddressFormValid = () => {
+        let flatBuildingNameRequired = "dispNone";
+        let cityRequired = "dispNone";
+        let localityRequired = "dispNone";
+        let stateRequired = "dispNone";
+        let pincodeRequired = "dispNone";
+        let pincodeHelpText = "dispNone";
+        let saveAddressFormValid = true;
+
+        if (this.state.flatBuildingName === "") {
+            flatBuildingNameRequired = "dispBlock";
+            saveAddressFormValid = false;
+        }
+
+        if (this.state.locality === "") {
+            localityRequired = "dispBlock";
+            saveAddressFormValid = false;
+        }
+
+        if (this.state.selectedState === "") {
+            stateRequired = "dispBlock";
+            saveAddressFormValid = false;
+        }
+
+        if (this.state.city === "") {
+            cityRequired = "dispBlock";
+            saveAddressFormValid = false;
+        }
+
+        if (this.state.pincode === "") {
+            pincodeRequired = "dispBlock";
+            saveAddressFormValid = false;
+        }
+        if (this.state.pincode !== "") {
+            var pincodePattern = /^\d{6}$/;
+            if (!this.state.pincode.match(pincodePattern)) {
+                pincodeHelpText = "dispBlock";
+                saveAddressFormValid = false;
+            }
+        }
+        this.setState({
+            ...this.state,
+            flatBuildingNameRequired: flatBuildingNameRequired,
+            cityRequired: cityRequired,
+            localityRequired: localityRequired,
+            stateRequired: stateRequired,
+            pincodeRequired: pincodeRequired,
+            pincodeHelpText: pincodeHelpText,
+        })
+
+        return saveAddressFormValid
+    }
+
 
     inputFlatBuildingNameChangeHandler = (event) => {
         this.setState({
@@ -190,10 +300,10 @@ class Checkout extends Component {
             city: event.target.value,
         })
     }
-    selectStateChangeHandler = (event) => {
+    selectSelectedStateChangeHandler = (event) => {
         this.setState({
             ...this.state,
-            state: event.target.value,
+            selectedState: event.target.value,
         })
     }
     inputPincodeChangeHandler = (event) => {
@@ -223,7 +333,6 @@ class Checkout extends Component {
         const { classes } = this.props;
         return (
             <div>
-                {console.log(this.props.cartItems)}
                 <Header baseUrl={this.props.baseUrl} showHeaderSearchBox={false} />
                 <div className="flex-container">
                     <div className="stepper-container">
@@ -293,9 +402,9 @@ class Checkout extends Component {
                                                 <br />
                                                 <FormControl required className={classes.formControlSelect}>
                                                     <InputLabel htmlFor="state">State</InputLabel>
-                                                    <Select id="state" className={classes.selectField} state={this.state.state} onChange={this.selectStateChangeHandler} MenuProps={{style: {marginTop: '50px',maxHeight: '300px'}}} value={this.state.state}>
-                                                        {this.state.states.map((state, index) => (
-                                                            <MenuItem value={index}>{state}</MenuItem>
+                                                    <Select id="state" className={classes.selectField} state={this.state.selectedState} onChange={this.selectSelectedStateChangeHandler} MenuProps={{ style: { marginTop: '50px', maxHeight: '300px' } }} value={this.state.selectedState}>
+                                                        {this.state.states.map(state => (
+                                                            <MenuItem value={state.id} key={state.id} >{state.state_name}</MenuItem>
                                                         ))}
                                                     </Select>
                                                     <FormHelperText className={this.state.stateRequired}>
@@ -317,7 +426,7 @@ class Checkout extends Component {
                                                 <br />
                                                 <br />
                                                 <br />
-                                                <Button variant="contained" className={classes.formButton}  color="secondary" onClick={this.signUpClickHandler}>SAVE ADDRESS</Button>
+                                                <Button variant="contained" className={classes.formButton} color="secondary" onClick={this.saveAddressClickHandler}>SAVE ADDRESS</Button>
                                             </TabContainer>
                                             }
                                         </div>

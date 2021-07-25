@@ -15,3 +15,6 @@
 .dispBlock {
     display: block;
 }
+.stepper-container{
+    width: 100%;
+}
