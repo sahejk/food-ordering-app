@@ -174,7 +174,7 @@ class Home extends Component {
         return (
             <div>
                 {/* Rendering the Header Component */}
-                <Header baseUrl={this.props.baseUrl} showHeaderSearchBox={true} updateSearchRestaurant={this.updateSearchRestaurant}></Header>
+                <Header baseUrl={this.props.baseUrl} showHeaderSearchBox updateSearchRestaurant={this.updateSearchRestaurant}></Header>
                 <div className="flex-container">
                     <Grid container spacing={3} wrap="wrap" alignContent="center" className={classes.grid}>
                         {/* Restaurant array map method is called and for each item in the array a card is rendered with the details. */}

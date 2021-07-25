@@ -5,7 +5,7 @@ class Details extends Component{
     render(){
         return(
             <div>
-                <Header></Header>
+                <Header baseUrl={this.props.baseUrl} showHeaderSearchBox = {false}></Header>
                 <h1>This is Details Page</h1>
             </div>
         )
