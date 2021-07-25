@@ -5,6 +5,7 @@ import { withStyles, CardContent } from '@material-ui/core';
 import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
 import AddIcon from '@material-ui/icons/Add';
+import CloseIcon from '@material-ui/icons/Close';
 import Card from '@material-ui/core/Card';
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import CardHeader from '@material-ui/core/CardHeader';
@@ -13,6 +14,7 @@ import Badge from '@material-ui/core/Badge';
 import Button from '@material-ui/core/Button';
 import Snackbar from '@material-ui/core/Snackbar';
 import Fade from '@material-ui/core/Fade';
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import 'font-awesome/css/font-awesome.min.css';
 import '@fortawesome/fontawesome-free-solid';
@@ -95,8 +97,10 @@ class Details extends Component {
         this.state = {
             restaurantDetails: [],
             categories: [],
-            snackBarOpen: true,
-            snackBarMessage: "Hello Im SnackBar",
+            cartItems: [],
+            totalAmount:0,
+            snackBarOpen: false,
+            snackBarMessage: "",
             transition: Fade,
         }
     }
@@ -106,7 +110,6 @@ class Details extends Component {
         let that = this;
         let xhrRestaurantDetails = new XMLHttpRequest()
 
-        console.log('here')
 
         xhrRestaurantDetails.addEventListener("readystatechange", function () {
             if (xhrRestaurantDetails.readyState === 4 && xhrRestaurantDetails.status === 200) {
@@ -140,6 +143,116 @@ class Details extends Component {
         xhrRestaurantDetails.send(data);
 
     }
+
+    itemAddButtonClickHandler = (item) => {
+        let cartItems = this.state.cartItems;
+        let itemPresentInCart = false;
+        cartItems.forEach(cartItem => {
+            if (cartItem.id === item.id) {
+                itemPresentInCart = true;
+                cartItem.quantity++;
+                cartItem.totalAmount = cartItem.price * cartItem.quantity;
+            }
+        })
+        if (!itemPresentInCart) {
+            let cartItem = {
+                id:item.id,
+                name: item.item_name,
+                price: item.price,
+                totalAmount:item.price,
+                quantity: 1,
+                itemType: item.item_type,
+            }
+            cartItems.push(cartItem);
+        }
+        let totalAmount = 0;
+        cartItems.forEach(cartItem =>{
+            totalAmount = totalAmount + cartItem.totalAmount;
+        })
+
+        this.setState({
+            ...this.state,
+            cartItems: cartItems,
+            snackBarOpen: true,
+            snackBarMessage: "Item added to cart!",
+            totalAmount:totalAmount,
+
+        })
+    }
+
+    minusButtonClickHandler =  (item) => {
+        let cartItems = this.state.cartItems;
+        let index =  cartItems.indexOf(item);
+        let itemRemoved = false;
+        cartItems[index].quantity--;
+        if(cartItems[index].quantity === 0){
+            cartItems.splice(index,1);
+            itemRemoved = true;
+        }else{
+            cartItems[index].totalAmount = cartItems[index].price * cartItems[index].quantity;
+        }
+
+        let totalAmount = 0;
+        cartItems.forEach(cartItem =>{
+            totalAmount = totalAmount + cartItem.totalAmount;
+        })
+
+        this.setState({
+            ...this.state,
+            cartItems: cartItems,
+            snackBarOpen: true,
+            snackBarMessage: itemRemoved ? "Item removed from cart!" :"Item quantity decreased by 1!",
+            totalAmount:totalAmount,
+
+        })
+    }
+
+    cartAddButtonClickHandler = (item) => {
+        let cartItems = this.state.cartItems;
+        let index =  cartItems.indexOf(item);
+        cartItems[index].quantity++;
+        cartItems[index].totalAmount = cartItems[index].price * cartItems[index].quantity;
+
+        let totalAmount = 0;
+        cartItems.forEach(cartItem =>{
+            totalAmount = totalAmount + cartItem.totalAmount;
+        })
+
+        this.setState({
+            ...this.state,
+            cartItems: cartItems,
+            snackBarOpen: true,
+            snackBarMessage: "Item quantity increased by 1!",
+            totalAmount:totalAmount,
+
+        })
+    }
+
+    checkOutButtonClickHandler= () => {
+        let cartItems =  this.state.cartItems;
+        let isLoggedIn = sessionStorage.getItem("access-token") == null ? false : true;
+        if(cartItems.length === 0){
+            this.setState({
+                ...this.state,
+                snackBarOpen: true,
+                snackBarMessage: "Please add an item to your cart!",
+            })
+        }else if(!isLoggedIn){
+            this.setState({
+                ...this.state,
+                snackBarOpen: true,
+                snackBarMessage: "Please login first!",
+            })
+        }else{
+            this.props.history.push({
+                pathname: '/checkout/' + this.props.match.params.id,
+                cartItems: this.state.cartItems,
+                restaurantDetails: this.state.restaurantDetails,
+            })
+        }
+    }
+
+
 
     snackBarClose = (event, reason) => {
         if (reason === 'clickaway') {
@@ -195,13 +308,13 @@ class Details extends Component {
                                 <Divider />
                                 {category.item_list.map(item => (
                                     <div className='menu-item-container' key={item.id}>
-                                        <FontAwesomeIcon icon="circle" size="sm" color={item.item_type === "NON_VEG"?"#BE4A47":"#5A9A5B"} />
-                                        <Typography variant="subtitle1" component="p" className={classes.menuItemName} >{item.item_name[0].toUpperCase()+item.item_name.slice(1)}</Typography>
+                                        <FontAwesomeIcon icon="circle" size="sm" color={item.item_type === "NON_VEG" ? "#BE4A47" : "#5A9A5B"} />
+                                        <Typography variant="subtitle1" component="p" className={classes.menuItemName} >{item.item_name[0].toUpperCase() + item.item_name.slice(1)}</Typography>
                                         <div className="item-price">
                                             <i className="fa fa-inr" aria-hidden="true"></i>
                                             <Typography variant="subtitle1" component="p" className={classes.itemPrice} >{item.price.toFixed(2)}</Typography>
                                         </div>
-                                        <IconButton className={classes.addButton} aria-label="add">
+                                        <IconButton className={classes.addButton} aria-label="add" onClick={() => this.itemAddButtonClickHandler(item)}>
                                             <AddIcon />
                                         </IconButton>
                                     </div>
@@ -214,7 +327,7 @@ class Details extends Component {
                             <CardHeader
                                 avatar={
                                     <Avatar aria-label="shopping-cart" className={classes.shoppingCart}>
-                                        <Badge badgeContent={4} color="primary" className={classes.badge}>
+                                        <Badge badgeContent={this.state.cartItems.length} color="primary" className={classes.badge}>
                                             <ShoppingCartIcon />
                                         </Badge>
                                     </Avatar>
@@ -226,31 +339,32 @@ class Details extends Component {
                                 className={classes.cartHeader}
                             />
                             <CardContent className={classes.cardContent}>
-                                <div className="cart-menu-item-container">
-                                    <i className="fa fa-stop-circle-o" aria-hidden="true"></i>
-                                    <Typography variant="subtitle1" component="p" className={classes.menuItemName} id="cart-menu-item-name" >Pizza</Typography>
-                                    <IconButton className={classes.cartItemButton} id="minus-button" aria-label="remove" >
-                                        <FontAwesomeIcon icon="minus" size="xs" color="black" />
-                                    </IconButton>
-                                    <Typography variant="subtitle1" component="p" className={classes.itemQuantity}>1</Typography>
-                                    <IconButton className={classes.cartItemButton} aria-label="add" >
-                                        <FontAwesomeIcon icon="plus" size="xs" color="black" />
-                                    </IconButton>
-                                    <div className="item-price">
-                                        <i className="fa fa-inr" aria-hidden="true" style={{ color: 'grey' }}></i>
-                                        <Typography variant="subtitle1" component="p" className={classes.itemPrice} id="cart-item-price">200</Typography>
+                                {this.state.cartItems.map(cartItem => (
+                                    <div className="cart-menu-item-container" key={cartItem.id}>
+                                        <i className="fa fa-stop-circle-o" aria-hidden="true" style={{color:cartItem.itemType === "NON_VEG" ? "#BE4A47" : "#5A9A5B"}}></i>
+                                        <Typography variant="subtitle1" component="p" className={classes.menuItemName} id="cart-menu-item-name" >{cartItem.name[0].toUpperCase() + cartItem.name.slice(1)}</Typography>
+                                        <IconButton className={classes.cartItemButton} id="minus-button" aria-label="remove" onClick = {() => this.minusButtonClickHandler(cartItem)} >
+                                            <FontAwesomeIcon icon="minus" size="xs" color="black" />
+                                        </IconButton>
+                                        <Typography variant="subtitle1" component="p" className={classes.itemQuantity}>{cartItem.quantity}</Typography>
+                                        <IconButton className={classes.cartItemButton} aria-label="add"  onClick = {() => this.cartAddButtonClickHandler(cartItem)}>
+                                            <FontAwesomeIcon icon="plus" size="xs" color="black" />
+                                        </IconButton>
+                                        <div className="item-price">
+                                            <i className="fa fa-inr" aria-hidden="true" style={{ color: 'grey' }}></i>
+                                            <Typography variant="subtitle1" component="p" className={classes.itemPrice} id="cart-item-price">{cartItem.totalAmount.toFixed(2)}</Typography>
+                                        </div>
                                     </div>
-
-                                </div>
+                                ))}
                                 <div className="total-amount-container">
                                     <Typography variant="subtitle2" component="p" className={classes.totalAmount}>TOTAL AMOUNT</Typography>
                                     <div className="total-price">
                                         <i className="fa fa-inr" aria-hidden="true" ></i>
-                                        <Typography variant="subtitle1" component="p" className={classes.itemPrice} id="cart-total-price">200</Typography>
+                                        <Typography variant="subtitle1" component="p" className={classes.itemPrice} id="cart-total-price">{this.state.totalAmount.toFixed(2)}</Typography>
                                     </div>
                                 </div>
 
-                                <Button variant="contained" color='primary' fullWidth={true} className={classes.checkOutButton}>CHECKOUT</Button>
+                                <Button variant="contained" color='primary' fullWidth={true} className={classes.checkOutButton} onClick = {this.checkOutButtonClickHandler}>CHECKOUT</Button>
 
                             </CardContent>
 
@@ -271,6 +385,11 @@ class Details extends Component {
                             'aria-describedby': 'message-id',
                         }}
                         message={<span id="message-id">{this.state.snackBarMessage}</span>}
+                        action={
+                            <IconButton color='inherit' onClick={this.snackBarClose}>
+                                <CloseIcon/>
+                            </IconButton>
+                        }
                     />
                 </div>
             </div>
