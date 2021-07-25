@@ -11,12 +11,15 @@ import CardHeader from '@material-ui/core/CardHeader';
 import Avatar from '@material-ui/core/Avatar';
 import Badge from '@material-ui/core/Badge';
 import Button from '@material-ui/core/Button';
+import Snackbar from '@material-ui/core/Snackbar';
+import Fade from '@material-ui/core/Fade';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import 'font-awesome/css/font-awesome.min.css';
 import '@fortawesome/fontawesome-free-solid';
 import '@fortawesome/fontawesome-svg-core';
 import '@fortawesome/fontawesome-free-regular';
 import "./Details.css"
+
 
 const styles = (theme => ({
 
@@ -54,27 +57,27 @@ const styles = (theme => ({
     },
     cartHeader: {
         'padding-bottom': '0px',
-        'margin-left':'10px',
-        'margin-right':'10px'
+        'margin-left': '10px',
+        'margin-right': '10px'
     },
     cartItemButton: {
         padding: '10px',
         'border-radius': '0',
-        color:'#fdd835',
-        '&:hover':{
-            'background-color':'#ffee58',
+        color: '#fdd835',
+        '&:hover': {
+            'background-color': '#ffee58',
         }
     },
-    cardContent:{
-        'padding-top':'0px',
-        'margin-left':'10px',
-        'margin-right':'10px'
+    cardContent: {
+        'padding-top': '0px',
+        'margin-left': '10px',
+        'margin-right': '10px'
     },
-    totalAmount:{
-        'font-weight':'bold'
+    totalAmount: {
+        'font-weight': 'bold'
     },
-    checkOutButton:{
-        'font-weight':'400'
+    checkOutButton: {
+        'font-weight': '400'
     }
 
 
@@ -91,6 +94,10 @@ class Details extends Component {
         super()
         this.state = {
             restaurantDetails: [],
+            categories: [],
+            snackBarOpen: true,
+            snackBarMessage: "Hello Im SnackBar",
+            transition: Fade,
         }
     }
 
@@ -118,9 +125,12 @@ class Details extends Component {
                     locality: response.address.locality,
                     categoriesName: categoriesName.toString(),
                 }
+                let categories = response.categories;
                 that.setState({
                     ...that.state,
                     restaurantDetails: restaurantDetails,
+                    categories: categories,
+
                 })
             }
 
@@ -129,6 +139,17 @@ class Details extends Component {
         xhrRestaurantDetails.open('GET', this.props.baseUrl + 'restaurant/' + this.props.match.params.id)
         xhrRestaurantDetails.send(data);
 
+    }
+
+    snackBarClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({
+            ...this.state,
+            snackBarMessage: "",
+            snackBarOpen: false,
+        })
     }
 
     render() {
@@ -166,20 +187,27 @@ class Details extends Component {
                     </div>
                 </div>
                 <div className="menu-details-cart-container">
+
                     <div className="menu-details">
-                        <Typography variant="overline" component="p" className={classes.categoryName} >CHINESE</Typography>
-                        <Divider />
-                        <div className='menu-item-container'>
-                            <FontAwesomeIcon icon="circle" size="sm" color="green" />
-                            <Typography variant="subtitle1" component="p" className={classes.menuItemName} >Pizza</Typography>
-                            <div className="item-price">
-                                <i className="fa fa-inr" aria-hidden="true"></i>
-                                <Typography variant="subtitle1" component="p" className={classes.itemPrice} >200</Typography>
+                        {this.state.categories.map(category => (
+                            <div key={category.id}>
+                                <Typography variant="overline" component="p" className={classes.categoryName} >{category.category_name}</Typography>
+                                <Divider />
+                                {category.item_list.map(item => (
+                                    <div className='menu-item-container' key={item.id}>
+                                        <FontAwesomeIcon icon="circle" size="sm" color={item.item_type === "NON_VEG"?"#BE4A47":"#5A9A5B"} />
+                                        <Typography variant="subtitle1" component="p" className={classes.menuItemName} >{item.item_name[0].toUpperCase()+item.item_name.slice(1)}</Typography>
+                                        <div className="item-price">
+                                            <i className="fa fa-inr" aria-hidden="true"></i>
+                                            <Typography variant="subtitle1" component="p" className={classes.itemPrice} >{item.price.toFixed(2)}</Typography>
+                                        </div>
+                                        <IconButton className={classes.addButton} aria-label="add">
+                                            <AddIcon />
+                                        </IconButton>
+                                    </div>
+                                ))}
                             </div>
-                            <IconButton className={classes.addButton} aria-label="add">
-                                <AddIcon />
-                            </IconButton>
-                        </div>
+                        ))}
                     </div>
                     <div className="my-cart">
                         <Card className={classes.myCart}>
@@ -209,7 +237,7 @@ class Details extends Component {
                                         <FontAwesomeIcon icon="plus" size="xs" color="black" />
                                     </IconButton>
                                     <div className="item-price">
-                                        <i className="fa fa-inr" aria-hidden="true" style={{color:'grey'}}></i>
+                                        <i className="fa fa-inr" aria-hidden="true" style={{ color: 'grey' }}></i>
                                         <Typography variant="subtitle1" component="p" className={classes.itemPrice} id="cart-item-price">200</Typography>
                                     </div>
 
@@ -218,7 +246,7 @@ class Details extends Component {
                                     <Typography variant="subtitle2" component="p" className={classes.totalAmount}>TOTAL AMOUNT</Typography>
                                     <div className="total-price">
                                         <i className="fa fa-inr" aria-hidden="true" ></i>
-                                        <Typography variant="subtitle1" component="p" className={classes.itemPrice} id = "cart-total-price">200</Typography>
+                                        <Typography variant="subtitle1" component="p" className={classes.itemPrice} id="cart-total-price">200</Typography>
                                     </div>
                                 </div>
 
@@ -228,6 +256,22 @@ class Details extends Component {
 
                         </Card>
                     </div>
+                </div>
+                <div>
+                    <Snackbar
+                        anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'left',
+                        }}
+                        open={this.state.snackBarOpen}
+                        autoHideDuration={4000}
+                        onClose={this.snackBarClose}
+                        TransitionComponent={this.state.transition}
+                        ContentProps={{
+                            'aria-describedby': 'message-id',
+                        }}
+                        message={<span id="message-id">{this.state.snackBarMessage}</span>}
+                    />
                 </div>
             </div>
         )
