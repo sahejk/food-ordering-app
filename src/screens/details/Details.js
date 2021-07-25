@@ -1,13 +1,21 @@
 import React, { Component } from 'react';
 import Header from '../../common/header/Header';
 import Typography from '@material-ui/core/Typography';
-import { withStyles } from '@material-ui/core';
+import { withStyles, CardContent } from '@material-ui/core';
 import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
 import AddIcon from '@material-ui/icons/Add';
+import Card from '@material-ui/core/Card';
+import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
+import CardHeader from '@material-ui/core/CardHeader';
+import Avatar from '@material-ui/core/Avatar';
+import Badge from '@material-ui/core/Badge';
+import Button from '@material-ui/core/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import 'font-awesome/css/font-awesome.min.css';
 import '@fortawesome/fontawesome-free-solid';
 import '@fortawesome/fontawesome-svg-core';
+import '@fortawesome/fontawesome-free-regular';
 import "./Details.css"
 
 const styles = (theme => ({
@@ -24,22 +32,58 @@ const styles = (theme => ({
     restaurantCategory: {
         'padding': '8px 0px 8px 0px'
     },
-    avgCost:{
-        'padding-left':'5px'
+    avgCost: {
+        'padding-left': '5px'
     },
-    itemPrice:{
-        'padding-left':'5px'
+    itemPrice: {
+        'padding-left': '5px'
     },
-    addButton:{
-        'margin-left':'25px',
+    addButton: {
+        'margin-left': '25px',
     },
-    menuItemName:{
-        'margin-left':'20px',
+    menuItemName: {
+        'margin-left': '20px',
+    },
+
+    shoppingCart: {
+        color: 'black',
+        'background-color': 'white',
+        width: '60px',
+        height: '50px',
+        'margin-left': '-20px',
+    },
+    cartHeader: {
+        'padding-bottom': '0px',
+        'margin-left':'10px',
+        'margin-right':'10px'
+    },
+    cartItemButton: {
+        padding: '10px',
+        'border-radius': '0',
+        color:'#fdd835',
+        '&:hover':{
+            'background-color':'#ffee58',
+        }
+    },
+    cardContent:{
+        'padding-top':'0px',
+        'margin-left':'10px',
+        'margin-right':'10px'
+    },
+    totalAmount:{
+        'font-weight':'bold'
+    },
+    checkOutButton:{
+        'font-weight':'400'
     }
 
 
 
+
 }))
+
+
+
 
 
 class Details extends Component {
@@ -113,7 +157,7 @@ class Details extends Component {
                             </div>
                             <div className="restaurant-avg-cost-container">
                                 <div className="restaurant-avg-cost">
-                                    <FontAwesomeIcon icon="rupee-sign" size="sm" color="black" />
+                                    <i className="fa fa-inr" aria-hidden="true"></i>
                                     <Typography variant="subtitle1" component="p" className={classes.avgCost}>{this.state.restaurantDetails.avgCost}</Typography>
                                 </div>
                                 <Typography variant="caption" component="p" className={classes.textRatingCost} >AVERAGE COST FOR TWO PEOPLE</Typography>
@@ -123,20 +167,66 @@ class Details extends Component {
                 </div>
                 <div className="menu-details-cart-container">
                     <div className="menu-details">
-                        <Typography variant="subtitle2" component="p" className={classes.categoryName} >CHINESE</Typography>
+                        <Typography variant="overline" component="p" className={classes.categoryName} >CHINESE</Typography>
                         <Divider />
                         <div className='menu-item-container'>
                             <FontAwesomeIcon icon="circle" size="sm" color="green" />
                             <Typography variant="subtitle1" component="p" className={classes.menuItemName} >Pizza</Typography>
                             <div className="item-price">
-                                <FontAwesomeIcon icon="rupee-sign" size="sm" color="black" />
-                                <Typography variant="subtitle1" component="p" className={classes.itemPrice}>200</Typography>
+                                <i className="fa fa-inr" aria-hidden="true"></i>
+                                <Typography variant="subtitle1" component="p" className={classes.itemPrice} >200</Typography>
                             </div>
                             <IconButton className={classes.addButton} aria-label="add">
                                 <AddIcon />
                             </IconButton>
                         </div>
+                    </div>
+                    <div className="my-cart">
+                        <Card className={classes.myCart}>
+                            <CardHeader
+                                avatar={
+                                    <Avatar aria-label="shopping-cart" className={classes.shoppingCart}>
+                                        <Badge badgeContent={4} color="primary" className={classes.badge}>
+                                            <ShoppingCartIcon />
+                                        </Badge>
+                                    </Avatar>
+                                }
+                                title="My Cart"
+                                titleTypographyProps={{
+                                    variant: 'h6'
+                                }}
+                                className={classes.cartHeader}
+                            />
+                            <CardContent className={classes.cardContent}>
+                                <div className="cart-menu-item-container">
+                                    <i className="fa fa-stop-circle-o" aria-hidden="true"></i>
+                                    <Typography variant="subtitle1" component="p" className={classes.menuItemName} id="cart-menu-item-name" >Pizza</Typography>
+                                    <IconButton className={classes.cartItemButton} id="minus-button" aria-label="remove" >
+                                        <FontAwesomeIcon icon="minus" size="xs" color="black" />
+                                    </IconButton>
+                                    <Typography variant="subtitle1" component="p" className={classes.itemQuantity}>1</Typography>
+                                    <IconButton className={classes.cartItemButton} aria-label="add" >
+                                        <FontAwesomeIcon icon="plus" size="xs" color="black" />
+                                    </IconButton>
+                                    <div className="item-price">
+                                        <i className="fa fa-inr" aria-hidden="true" style={{color:'grey'}}></i>
+                                        <Typography variant="subtitle1" component="p" className={classes.itemPrice} id="cart-item-price">200</Typography>
+                                    </div>
 
+                                </div>
+                                <div className="total-amount-container">
+                                    <Typography variant="subtitle2" component="p" className={classes.totalAmount}>TOTAL AMOUNT</Typography>
+                                    <div className="total-price">
+                                        <i className="fa fa-inr" aria-hidden="true" ></i>
+                                        <Typography variant="subtitle1" component="p" className={classes.itemPrice} id = "cart-total-price">200</Typography>
+                                    </div>
+                                </div>
+
+                                <Button variant="contained" color='primary' fullWidth={true} className={classes.checkOutButton}>CHECKOUT</Button>
+
+                            </CardContent>
+
+                        </Card>
                     </div>
                 </div>
             </div>
