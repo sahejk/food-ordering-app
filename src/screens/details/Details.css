@@ -1,0 +1,40 @@
+.restaurant-details-container{
+    display: flex;
+    align-items: center;
+    padding: 25px;
+    background-color: rgb(231, 231, 231)
+}
+
+.restaurant-rating-cost-container{
+    display: flex;
+    align-items: center;
+}
+
+.restaurant-details{
+    margin-left: 75px;
+    width: 100%;
+}
+
+.restaurant-rating{
+    display: flex;
+    align-items: baseline;
+
+}
+
+.restaurant-avg-cost{
+    display: flex;
+    align-items: baseline;
+
+}
+.restaurant-rating-container{
+    display: flex;
+    flex-direction: column;
+}
+.restaurant-avg-cost-container{
+    display: flex;
+    flex-direction: column;
+    margin-left: 350px;
+}
+.restaurant-NoOfCustomerRated{
+    font-weight: bold;
+}
