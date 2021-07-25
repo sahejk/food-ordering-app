@@ -18,6 +18,10 @@ import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import CardHeader from '@material-ui/core/CardHeader';
 import FilledInput from '@material-ui/core/FilledInput';
+import Snackbar from '@material-ui/core/Snackbar';
+import Fade from '@material-ui/core/Fade';
+import CloseIcon from '@material-ui/icons/Close';
+import { Redirect } from 'react-router-dom'
 import 'font-awesome/css/font-awesome.min.css';
 
 
@@ -148,7 +152,7 @@ class Checkout extends Component {
             value: 0,
             accessToken: sessionStorage.getItem('access-token'),
             addresses: [],
-            selectedAddress:"",
+            selectedAddress: "",
             flatBuildingName: "",
             flatBuildingNameRequired: "dispNone",
             locality: "",
@@ -164,10 +168,15 @@ class Checkout extends Component {
             selectedPayment: "",
             payment: [],
             cartItems: props.location.cartItems,
-            restaurantDetails:props.location.restaurantDetails,
-            coupon:null,
-            couponName:"",
-
+            restaurantDetails: props.location.restaurantDetails,
+            coupon: null,
+            couponName: "",
+            couponNameRequired: "dispNone",
+            couponNameHelpText: "dispNone",
+            snackBarOpen: false,
+            snackBarMessage: "",
+            transition: Fade,
+            isLoggedIn:sessionStorage.getItem('access-token') === null? true:false,
         }
     }
 
@@ -176,12 +185,20 @@ class Checkout extends Component {
     }
     nextButtonClickHandler = () => {
         if (this.state.value === 0) {
-            let activeStep = this.state.activeStep;
-            activeStep++;
-            this.setState({
-                ...this.state,
-                activeStep: activeStep,
-            });
+            if (this.state.selectedAddress !== "") {
+                let activeStep = this.state.activeStep;
+                activeStep++;
+                this.setState({
+                    ...this.state,
+                    activeStep: activeStep,
+                });
+            } else {
+                this.setState({
+                    ...this.state,
+                    snackBarOpen: true,
+                    snackBarMessage: "Select Address"
+                })
+            }
         }
     }
 
@@ -399,25 +416,99 @@ class Checkout extends Component {
         })
     }
 
+    inputCouponNameChangeHandler = (event) => {
+        this.setState({
+            ...this.state,
+            couponName: event.target.value,
+        })
+    }
+    applyButtonClickHandler = () => {
+        let isCouponNameValid = true;
+        let couponNameRequired = "dispNone";
+        let couponNameHelpText = "dispNone";
+        if (this.state.couponName === "") {
+            isCouponNameValid = false;
+            couponNameRequired = "dispBlock";
+            this.setState({
+                couponNameRequired: couponNameRequired,
+                couponNameHelpText: couponNameHelpText,
+            })
+        }
+
+        if (isCouponNameValid) {
+            let couponData = null;
+            let that = this;
+            let xhrCoupon = new XMLHttpRequest();
+            xhrCoupon.addEventListener("readystatechange", function () {
+                if (xhrCoupon.readyState === 4) {
+                    if (xhrCoupon.status === 200) {
+                        let coupon = JSON.parse(xhrCoupon.responseText)
+                        that.setState({
+                            ...that.state,
+                            coupon: coupon,
+                        })
+                    } else {
+                        that.setState({
+                            ...that.state,
+                            couponNameHelpText: "dispBlock",
+                            couponNameRequired: "dispNone"
+                        })
+                    }
+                }
+            })
+
+            xhrCoupon.open('GET', this.props.baseUrl + '/order/coupon/' + this.state.couponName)
+            xhrCoupon.setRequestHeader('authorization', 'Bearer ' + this.state.accessToken)
+            xhrCoupon.setRequestHeader("Content-Type", "application/json");
+            xhrCoupon.setRequestHeader("Cache-Control", "no-cache");
+            xhrCoupon.send(couponData);
+        }
+
+    }
+
+
     placeOrderButtonClickHandler = () => {
         let item_quantities = [];
         this.state.cartItems.forEach(cartItem => {
             item_quantities.push({
-                'item_id':cartItem.id,
-                'price':cartItem.totalAmount,
-                'quantity':cartItem.quantity,
+                'item_id': cartItem.id,
+                'price': cartItem.totalAmount,
+                'quantity': cartItem.quantity,
             });
         })
         let newOrderData = JSON.stringify({
             "address_id": this.state.selectedAddress,
             "bill": Math.floor(Math.random() * 100),
-            "coupon_id": "string",
-            "discount": 0,
+            "coupon_id": this.state.coupon.id,
+            "discount": this.getDiscountAmount(),
             "item_quantities": item_quantities,
             "payment_id": this.state.selectedPayment,
             "restaurant_id": this.state.restaurantDetails.id,
         })
-        console.log(newOrderData);
+        let that = this;
+        let xhrOrder = new XMLHttpRequest();
+        xhrOrder.addEventListener("readystatechange", function () {
+            if (xhrOrder.readyState === 4) {
+                if (xhrOrder.status === 201) {
+                    let responseOrder = JSON.parse(xhrOrder.responseText)
+                    that.setState({
+                        ...that.state,
+                        snackBarOpen:true,
+                        snackBarMessage:"Order placed successfully! Your order ID is "+responseOrder.id,
+                    });
+                }else{
+                    that.setState({
+                        ...that.state,
+                        snackBarOpen:true,
+                        snackBarMessage:"Unable to place your order! Please try again!",
+                    });
+                }
+            }
+        })
+        xhrOrder.open('POST', this.props.baseUrl + 'order')
+        xhrOrder.setRequestHeader('authorization', 'Bearer ' + this.state.accessToken)
+        xhrOrder.setRequestHeader('Content-Type', 'application/json');
+        xhrOrder.send(newOrderData);
     }
 
 
@@ -435,7 +526,7 @@ class Checkout extends Component {
         this.setState({
             ...this.state,
             addresses: addresses,
-            selectedAddress:selectedAddress
+            selectedAddress: selectedAddress
         })
     }
     getSubTotal = () => {
@@ -448,21 +539,38 @@ class Checkout extends Component {
 
     getDiscountAmount = () => {
         let discountAmount = 0;
-        if(this.state.coupon !== null){
-            discountAmount = (this.getSubTotal() * this.state.coupon.discount) / 100;
+        if (this.state.coupon !== null) {
+            discountAmount = (this.getSubTotal() * this.state.coupon.percent) / 100;
             return discountAmount
         }
         return discountAmount;
     }
     getNetAmount = () => {
-        let netAmount  = this.getSubTotal() - this.getDiscountAmount();
+        let netAmount = this.getSubTotal() - this.getDiscountAmount();
         return netAmount;
+    }
+
+    snackBarClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({
+            ...this.state,
+            snackBarMessage: "",
+            snackBarOpen: false,
+        })
+    }
+    redirectToHome = () => {
+        if (this.state.isLoggedIn) {
+            return <Redirect to = "/"/>
+        }
     }
 
     render() {
         const { classes } = this.props;
         return (
             <div>
+                {this.redirectToHome()}
                 <Header baseUrl={this.props.baseUrl} showHeaderSearchBox={false} />
                 <div className="checkout-container">
                     <div className="stepper-container">
@@ -635,7 +743,13 @@ class Checkout extends Component {
                                 <div className="coupon-container">
                                     <FormControl className={classes.formControlCoupon}>
                                         <InputLabel htmlFor="coupon">Coupon Code</InputLabel>
-                                        <FilledInput id="coupon" className={classes.couponInput} value={this.state.couponName} onChange={this.inputCouponChangeHandler} placeholder="Ex: FLAT30" />
+                                        <FilledInput id="coupon" className={classes.couponInput} value={this.state.couponName} onChange={this.inputCouponNameChangeHandler} placeholder="Ex: FLAT30" />
+                                        <FormHelperText className={this.state.couponNameRequired}>
+                                            <span className="red">required</span>
+                                        </FormHelperText>
+                                        <FormHelperText className={this.state.couponNameHelpText}>
+                                            <span className="red">invalid coupon</span>
+                                        </FormHelperText>
                                     </FormControl>
                                     <Button variant="contained" color="default" className={classes.applyButton} onClick={this.applyButtonClickHandler} size="small">APPLY</Button>
                                 </div>
@@ -670,6 +784,27 @@ class Checkout extends Component {
 
                         </Card>
                     </div>
+                </div>
+                <div>
+                    <Snackbar
+                        anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'left',
+                        }}
+                        open={this.state.snackBarOpen}
+                        autoHideDuration={4000}
+                        onClose={this.snackBarClose}
+                        TransitionComponent={this.state.transition}
+                        ContentProps={{
+                            'aria-describedby': 'message-id',
+                        }}
+                        message={<span id="message-id">{this.state.snackBarMessage}</span>}
+                        action={
+                            <IconButton color='inherit' onClick={this.snackBarClose}>
+                                <CloseIcon />
+                            </IconButton>
+                        }
+                    />
                 </div>
             </div >
         )
