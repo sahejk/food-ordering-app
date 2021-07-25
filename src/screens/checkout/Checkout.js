@@ -3,10 +3,12 @@ import Stepper from '@material-ui/core/Stepper';
 import Step from '@material-ui/core/Step';
 import StepLabel from '@material-ui/core/StepLabel';
 import StepContent from '@material-ui/core/StepContent';
-import { withStyles, Button, } from '@material-ui/core';
+import { withStyles, Button, Tab, Tabs} from '@material-ui/core';
 import Typography from '@material-ui/core/Typography';
+import PropTypes from 'prop-types';
 import Paper from '@material-ui/core/Paper';
 import Header from '../../common/header/Header';
+import '../checkout/Checkout.css'
 
 const styles = (theme => ({
 
@@ -20,11 +22,24 @@ const styles = (theme => ({
     resetContainer: {
         padding: theme.spacing(3),
     },
+    tab: {
+        "font-weight": 500,
+    },
 
 
 }))
 
+const TabContainer = function (props) {
+    return (
+        <Typography component="div" style={{ padding: '0px', textAlign: 'center' }}>
+            {props.children}
+        </Typography>
+    )
+}
 
+TabContainer.propTypes = {
+    children: PropTypes.node.isRequired
+}
 
 class Checkout extends Component {
     constructor() {
@@ -32,6 +47,7 @@ class Checkout extends Component {
         this.state = {
             activeStep: 0,
             steps: this.getSteps(),
+            value:0,
 
         }
     }
@@ -63,6 +79,12 @@ class Checkout extends Component {
         });
     }
 
+    tabsChangeHandler = (event, value) => {
+        this.setState({
+            value,
+        });
+    }
+
     render() {
         const { classes } = this.props;
         return (
@@ -75,7 +97,15 @@ class Checkout extends Component {
                                 <Step key={label}>
                                     <StepLabel>{label}</StepLabel>
                                     <StepContent>
-                                        <Typography>dummy Address</Typography>
+                                        <Tabs className="address-tabs" value={this.state.value} onChange={this.tabsChangeHandler}>
+                                            <Tab label="EXISTING ADDRESS" className={classes.tab} />
+                                            <Tab label="NEW ADDRESS" className={classes.tab} />
+                                        </Tabs>
+                                        {this.state.value === 0 &&
+                                        <TabContainer>
+                                            hello
+                                        </TabContainer>
+                                        }
                                         <div className={classes.actionsContainer}>
                                             <div>
                                                 <Button
