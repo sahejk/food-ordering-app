@@ -4,15 +4,36 @@
     padding: 25px;
     background-color: rgb(231, 231, 231)
 }
+@media screen and (max-width:600px){
+    .restaurant-details-container{
+        flex-direction: column;
+    }
+    .restaurant-details{
+        text-align: center;
+    }
+    .restaurant-avg-cost-container{
+        margin-left: 50px;
+    }
+    .restaurant-rating{
+        align-self: center;
+
+    }
+    .restaurant-avg-cost{
+        place-content: center;
+    }
+
+
+}
 
 .restaurant-rating-cost-container{
     display: flex;
     align-items: center;
 }
-
-.restaurant-details{
-    margin-left: 75px;
-    width: 100%;
+@media screen and (min-width:600px){
+    .restaurant-details{
+        margin-left: 75px;
+        width: 100%;
+    }
 }
 
 .restaurant-rating{
@@ -30,10 +51,12 @@
     display: flex;
     flex-direction: column;
 }
-.restaurant-avg-cost-container{
-    display: flex;
-    flex-direction: column;
-    margin-left: 350px;
+@media screen and (min-width:600px){
+    .restaurant-avg-cost-container{
+        display: flex;
+        flex-direction: column;
+        margin-left: 350px;
+    }
 }
 .restaurant-NoOfCustomerRated{
     font-weight: bold;
