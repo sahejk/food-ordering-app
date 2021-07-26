@@ -6,10 +6,12 @@ import Checkout from './checkout/Checkout';
 import Profile from './profile/Profile';
 
 //Creating controller class for easy routing the pages
+
+//for easily routing the changes controller class has been created
 class Controller extends Component{
     constructor(){
         super()
-        this.baseUrl = "http://localhost:8080/api/" //setting the baseUrl of the api
+        this.baseUrl = "http://localhost:8080/api/" //{setting the baseUrl of the api}
     }
 
     render(){
