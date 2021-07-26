@@ -315,9 +315,8 @@ class Checkout extends Component {
         xhrAddress.addEventListener('readystatechange', function () {
             if (xhrAddress.readyState === 4 && xhrAddress.status === 200) {
                 let responseAddresses = JSON.parse(xhrAddress.responseText).addresses;
-                let addresses = [];
-                responseAddresses.forEach(responseAddress => {
-                    let address = {
+                const addresses = (responseAddresses != null ? responseAddresses : []).map(responseAddress =>
+                    ({
                         id: responseAddress.id,
                         city: responseAddress.city,
                         flatBuildingName: responseAddress.flat_building_name,
@@ -325,9 +324,8 @@ class Checkout extends Component {
                         pincode: responseAddress.pincode,
                         state: responseAddress.state,
                         selected: false,
-                    }
-                    addresses.push(address)
-                })
+                    })
+                )
                 that.setState({
                     ...that.state,
                     addresses: addresses
