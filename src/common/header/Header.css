@@ -13,6 +13,7 @@
     align-self: center;
 }
 
+
 /* Responsive Code for the Header */
 @media screen and (max-width:600px){
     .app-header{
